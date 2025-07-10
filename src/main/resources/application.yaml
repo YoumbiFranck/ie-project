@@ -86,6 +86,7 @@ camunda:
       properties:
         skipIsolationLevelCheck: true
         databaseTablePrefix: ""
+        historyTimeToLive: "30"
 
 # Actuator endpoints pour Docker
 management:
