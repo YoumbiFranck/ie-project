@@ -1,4 +1,5 @@
 # Container starten / Start containers
+docker compose down -v
 docker compose up -d
 
 docker compose up --build -d

@@ -1,6 +1,8 @@
 # Camunda Projekt
 
 ## Container starten / Start containers
+docker compose down -v
+docker compose down
 docker compose up -d
 
 ## Start the application (wenn Änderungen an der Anwendung vorgenommen wurden) / Start the application (if changes were made to the application)
