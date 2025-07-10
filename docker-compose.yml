@@ -1,0 +1,122 @@
+services:
+  # MySQL Datenbank Service / MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    container_name: camunda_mysql
+    platform: linux/amd64  # Für Mac M1/M2 Kompatibilität / For Mac M1/M2 compatibility
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: camunda
+      MYSQL_USER: camunda
+      MYSQL_PASSWORD: camunda
+    command: --transaction-isolation=READ-COMMITTED --innodb-lock-wait-timeout=300
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - camunda_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      interval: 30s
+
+  # Camunda Platform Service
+  camunda:
+    image: camunda/camunda-bpm-platform:7.23.0
+    container_name: camunda_platform
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Datenbankverbindung / Database connection
+      DB_DRIVER: com.mysql.cj.jdbc.Driver
+      DB_URL: jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: camunda
+      DB_PASSWORD: camunda
+      # Camunda Admin-Benutzer / Camunda admin user
+      CAMUNDA_BPM_ADMIN_USER_ID: admin
+      CAMUNDA_BPM_ADMIN_USER_PASSWORD: admin
+      CAMUNDA_BPM_ADMIN_USER_FIRST_NAME: Admin
+      CAMUNDA_BPM_ADMIN_USER_LAST_NAME: User
+      CAMUNDA_BPM_ADMIN_USER_EMAIL: admin@example.com
+    ports:
+      - "8090:8080"
+    networks:
+      - camunda_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/camunda/"]
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+      interval: 30s
+
+  # Votre application Java / Your Java Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ie_project_app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Spring-Profil für Produktion / Spring profile for production
+      SPRING_PROFILES_ACTIVE: docker
+      # Datenbankverbindung / Database connection
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: camunda
+      SPRING_DATASOURCE_PASSWORD: camunda
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      # Camunda-Konfiguration / Camunda configuration
+      CAMUNDA_BPM_DATABASE_TYPE: mysql
+      CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE: true
+      # JPA Konfiguration / JPA configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      # JVM Options pour éviter les problèmes de mémoire
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    ports:
+      - "8080:8080"
+    networks:
+      - camunda_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+      interval: 30s
+
+  # phpMyAdmin für Datenbankadministration (optional) / phpMyAdmin for database administration (optional)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: camunda_phpmyadmin
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8082:80"
+    networks:
+      - camunda_network
+    restart: unless-stopped
+
+# Docker-Netzwerk für Service-Kommunikation / Docker network for service communication
+networks:
+  camunda_network:
+    driver: bridge
+
+# Persistente Volumes / Persistent volumes
+volumes:
+  mysql_data:
+    driver: local

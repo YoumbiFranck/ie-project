@@ -1,0 +1,98 @@
+# Standard-Konfiguration / Default configuration
+spring:
+  application:
+    name: ie-project
+
+  # H2-Datenbank für lokale Entwicklung / H2 database for local development
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# Camunda-Konfiguration / Camunda configuration
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      first-name: Admin
+      last-name: User
+      email: admin@example.com
+    database:
+      schema-update: true
+    webapp:
+      application-path: /camunda
+    rest:
+      enabled: true
+
+# Server-Konfiguration / Server configuration
+server:
+  port: 8080
+
+# Spring Boot Actuator für health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Logging-Konfiguration / Logging configuration
+logging:
+  level:
+    org.camunda: INFO
+    org.springframework: INFO
+    root: INFO
+
+---
+# Docker-Profil für Produktionsumgebung / Docker profile for production environment
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  # MySQL-Datenbank für Docker / MySQL database for Docker
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:camunda}
+    password: ${SPRING_DATASOURCE_PASSWORD:camunda}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+
+  # JPA-Konfiguration für MySQL / JPA configuration for MySQL
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# Camunda-Konfiguration für Docker / Camunda configuration for Docker
+camunda:
+  bpm:
+    database:
+      type: ${CAMUNDA_BPM_DATABASE_TYPE:mysql}
+      schema-update: ${CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE:true}
+    # MySQL spezifische Konfiguration / MySQL specific configuration
+    generic-properties:
+      properties:
+        skipIsolationLevelCheck: true
+        databaseTablePrefix: ""
+
+# Actuator endpoints pour Docker
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
