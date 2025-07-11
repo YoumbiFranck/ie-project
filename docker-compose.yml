@@ -5,15 +5,16 @@ services:
     container_name: camunda_mysql
     platform: linux/amd64  # Für Mac M1/M2 Kompatibilität / For Mac M1/M2 compatibility
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: camunda
-      MYSQL_USER: camunda
-      MYSQL_PASSWORD: camunda
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-camunda}
+      MYSQL_USER: ${MYSQL_USER:-camunda}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-camunda}
     command: --transaction-isolation=READ-COMMITTED --innodb-lock-wait-timeout=300
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      # Mount initialization script / Script d'initialisation
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - camunda_network
@@ -35,9 +36,9 @@ services:
     environment:
       # Datenbankverbindung / Database connection
       DB_DRIVER: com.mysql.cj.jdbc.Driver
-      DB_URL: jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true
-      DB_USERNAME: camunda
-      DB_PASSWORD: camunda
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-camunda}?useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${MYSQL_USER:-camunda}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-camunda}
       # Camunda Admin-Benutzer / Camunda admin user
       CAMUNDA_BPM_ADMIN_USER_ID: admin
       CAMUNDA_BPM_ADMIN_USER_PASSWORD: admin
@@ -67,21 +68,25 @@ services:
         condition: service_healthy
     environment:
       # Spring-Profil für Produktion / Spring profile for production
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       # Datenbankverbindung / Database connection
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: camunda
-      SPRING_DATASOURCE_PASSWORD: camunda
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-camunda}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-camunda}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:-com.mysql.cj.jdbc.Driver}
       # Camunda-Konfiguration / Camunda configuration
-      CAMUNDA_BPM_DATABASE_TYPE: mysql
-      CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE: true
+      CAMUNDA_BPM_DATABASE_TYPE: ${CAMUNDA_BPM_DATABASE_TYPE:-mysql}
+      CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE: ${CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE:-true}
       # JPA Konfiguration / JPA configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_JPA_SHOW_SQL: false
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-none}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:-org.hibernate.dialect.MySQL8Dialect}
+      # Application Deadline Configuration / Bewerbungsfristen-Konfiguration
+      APPLICATION_DEADLINE_WINTER: ${APPLICATION_DEADLINE_WINTER:-2025-08-01}
+      APPLICATION_DEADLINE_SUMMER: ${APPLICATION_DEADLINE_SUMMER:-2025-02-01}
+      APPLICATION_DEADLINE_MONTHS_BEFORE: ${APPLICATION_DEADLINE_MONTHS_BEFORE:-2}
       # JVM Options pour éviter les problèmes de mémoire
-      JAVA_OPTS: "-Xmx512m -Xms256m"
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
     ports:
       - "8080:8080"
     networks:
@@ -105,7 +110,7 @@ services:
       PMA_HOST: mysql
       PMA_PORT: 3306
       PMA_USER: root
-      PMA_PASSWORD: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
     ports:
       - "8082:80"
     networks:

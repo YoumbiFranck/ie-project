@@ -1,94 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
-                  id="Definitions_ApplicationProcess"
-                  targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Camunda Modeler"
-                  exporterVersion="5.34.0"
-                  modeler:executionPlatform="Camunda Platform"
-                  modeler:executionPlatformVersion="7.23.0">
-
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_ApplicationProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.34.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
   <bpmn:process id="student-application-process" name="Student Application Process" isExecutable="true" camunda:historyTimeToLive="30">
-
-    <!-- Start Event: Application received -->
     <bpmn:startEvent id="StartEvent_ApplicationReceived" name="Bewerbung eingegangen">
       <bpmn:outgoing>Flow_ToSaveApplication</bpmn:outgoing>
     </bpmn:startEvent>
-
-    <!-- Service Task: Save application to database -->
-    <bpmn:serviceTask id="Task_SaveApplication"
-                      name="Bewerbung speichern"
-                      camunda:delegateExpression="#{saveApplicationDelegate}">
+    <bpmn:serviceTask id="Task_SaveApplication" name="Bewerbung speichern" camunda:delegateExpression="#{saveApplicationDelegate}">
       <bpmn:incoming>Flow_ToSaveApplication</bpmn:incoming>
       <bpmn:outgoing>Flow_ToWelcomeMessage</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- Service Task: Generate welcome message (instead of Script Task) -->
-    <bpmn:serviceTask id="Task_WelcomeMessage"
-                      name="Willkommensnachricht erstellen"
-                      camunda:delegateExpression="#{welcomeMessageDelegate}">
+    <bpmn:serviceTask id="Task_WelcomeMessage" name="Willkommensnachricht erstellen" camunda:delegateExpression="#{welcomeMessageDelegate}">
       <bpmn:incoming>Flow_ToWelcomeMessage</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToDeadlineCheck</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- End Event -->
-    <bpmn:endEvent id="Event_ApplicationProcessed" name="Bewerbung bearbeitet">
-      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    <bpmn:serviceTask id="Task_DeadlineCheck" name="Bewerbungsfrist prüfen" camunda:delegateExpression="#{deadlineCheckDelegate}">
+      <bpmn:incoming>Flow_ToDeadlineCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDeadlineGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_DeadlineDecision" name="Frist eingehalten?">
+      <bpmn:incoming>Flow_ToDeadlineGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_OnTime</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TooLate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_HandleRejection" name="Bewerbung ablehnen" camunda:delegateExpression="#{rejectionHandlerDelegate}">
+      <bpmn:incoming>Flow_TooLate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRejectionEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ContinueProcessing" name="Bearbeitung fortsetzen" camunda:delegateExpression="#{continueProcessingDelegate}">
+      <bpmn:incoming>Flow_OnTime</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSuccessEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_ApplicationRejected" name="Bewerbung abgelehnt">
+      <bpmn:incoming>Flow_ToRejectionEnd</bpmn:incoming>
     </bpmn:endEvent>
-
-    <!-- Sequence Flows -->
+    <bpmn:endEvent id="Event_ApplicationAccepted" name="Bewerbung angenommen">
+      <bpmn:incoming>Flow_ToSuccessEnd</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_ToSaveApplication" sourceRef="StartEvent_ApplicationReceived" targetRef="Task_SaveApplication" />
     <bpmn:sequenceFlow id="Flow_ToWelcomeMessage" sourceRef="Task_SaveApplication" targetRef="Task_WelcomeMessage" />
-    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_WelcomeMessage" targetRef="Event_ApplicationProcessed" />
-
+    <bpmn:sequenceFlow id="Flow_ToDeadlineCheck" sourceRef="Task_WelcomeMessage" targetRef="Task_DeadlineCheck" />
+    <bpmn:sequenceFlow id="Flow_ToDeadlineGateway" sourceRef="Task_DeadlineCheck" targetRef="Gateway_DeadlineDecision" />
+    <bpmn:sequenceFlow id="Flow_OnTime" name="Rechtzeitig eingereicht" sourceRef="Gateway_DeadlineDecision" targetRef="Task_ContinueProcessing">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{isApplicationOnTime == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_TooLate" name="Frist überschritten" sourceRef="Gateway_DeadlineDecision" targetRef="Task_HandleRejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{isApplicationOnTime == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToRejectionEnd" sourceRef="Task_HandleRejection" targetRef="Event_ApplicationRejected" />
+    <bpmn:sequenceFlow id="Flow_ToSuccessEnd" sourceRef="Task_ContinueProcessing" targetRef="Event_ApplicationAccepted" />
   </bpmn:process>
-
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="student-application-process">
-
       <bpmndi:BPMNShape id="StartEvent_ApplicationReceived_di" bpmnElement="StartEvent_ApplicationReceived">
-        <dc:Bounds x="172" y="82" width="36" height="36" />
+        <dc:Bounds x="152" y="142" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="125" width="64" height="27" />
+          <dc:Bounds x="138" y="185" width="64" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
       <bpmndi:BPMNShape id="Task_SaveApplication_di" bpmnElement="Task_SaveApplication">
-        <dc:Bounds x="280" y="60" width="100" height="80" />
+        <dc:Bounds x="240" y="120" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-
       <bpmndi:BPMNShape id="Task_WelcomeMessage_di" bpmnElement="Task_WelcomeMessage">
-        <dc:Bounds x="450" y="60" width="100" height="80" />
+        <dc:Bounds x="390" y="120" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-
-      <bpmndi:BPMNShape id="Event_ApplicationProcessed_di" bpmnElement="Event_ApplicationProcessed">
-        <dc:Bounds x="622" y="82" width="36" height="36" />
+      <bpmndi:BPMNShape id="Task_DeadlineCheck_di" bpmnElement="Task_DeadlineCheck">
+        <dc:Bounds x="540" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DeadlineDecision_di" bpmnElement="Gateway_DeadlineDecision" isMarkerVisible="true">
+        <dc:Bounds x="695" y="135" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="608" y="125" width="64" height="27" />
+          <dc:Bounds x="746" y="153" width="88" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
+      <bpmndi:BPMNShape id="Task_HandleRejection_di" bpmnElement="Task_HandleRejection">
+        <dc:Bounds x="820" y="220" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ContinueProcessing_di" bpmnElement="Task_ContinueProcessing">
+        <dc:Bounds x="820" y="60" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ApplicationRejected_di" bpmnElement="Event_ApplicationRejected">
+        <dc:Bounds x="982" y="242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="968" y="285" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ApplicationAccepted_di" bpmnElement="Event_ApplicationAccepted">
+        <dc:Bounds x="982" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="968" y="125" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToSaveApplication_di" bpmnElement="Flow_ToSaveApplication">
-        <di:waypoint x="208" y="100" />
-        <di:waypoint x="280" y="100" />
+        <di:waypoint x="188" y="160" />
+        <di:waypoint x="240" y="160" />
       </bpmndi:BPMNEdge>
-
       <bpmndi:BPMNEdge id="Flow_ToWelcomeMessage_di" bpmnElement="Flow_ToWelcomeMessage">
-        <di:waypoint x="380" y="100" />
-        <di:waypoint x="450" y="100" />
+        <di:waypoint x="340" y="160" />
+        <di:waypoint x="390" y="160" />
       </bpmndi:BPMNEdge>
-
-      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
-        <di:waypoint x="550" y="100" />
-        <di:waypoint x="622" y="100" />
+      <bpmndi:BPMNEdge id="Flow_ToDeadlineCheck_di" bpmnElement="Flow_ToDeadlineCheck">
+        <di:waypoint x="490" y="160" />
+        <di:waypoint x="540" y="160" />
       </bpmndi:BPMNEdge>
-
+      <bpmndi:BPMNEdge id="Flow_ToDeadlineGateway_di" bpmnElement="Flow_ToDeadlineGateway">
+        <di:waypoint x="640" y="160" />
+        <di:waypoint x="695" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_OnTime_di" bpmnElement="Flow_OnTime">
+        <di:waypoint x="720" y="135" />
+        <di:waypoint x="720" y="100" />
+        <di:waypoint x="820" y="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="56" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TooLate_di" bpmnElement="Flow_TooLate">
+        <di:waypoint x="720" y="185" />
+        <di:waypoint x="720" y="260" />
+        <di:waypoint x="820" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="242" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectionEnd_di" bpmnElement="Flow_ToRejectionEnd">
+        <di:waypoint x="920" y="260" />
+        <di:waypoint x="982" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSuccessEnd_di" bpmnElement="Flow_ToSuccessEnd">
+        <di:waypoint x="920" y="100" />
+        <di:waypoint x="982" y="100" />
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
