@@ -1,94 +1,239 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
-                  id="Definitions_ApplicationProcess"
-                  targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Camunda Modeler"
-                  exporterVersion="5.34.0"
-                  modeler:executionPlatform="Camunda Platform"
-                  modeler:executionPlatformVersion="7.23.0">
-
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_ApplicationProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.34.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
   <bpmn:process id="student-application-process" name="Student Application Process" isExecutable="true" camunda:historyTimeToLive="30">
-
-    <!-- Start Event: Application received -->
     <bpmn:startEvent id="StartEvent_ApplicationReceived" name="Bewerbung eingegangen">
       <bpmn:outgoing>Flow_ToSaveApplication</bpmn:outgoing>
     </bpmn:startEvent>
-
-    <!-- Service Task: Save application to database -->
-    <bpmn:serviceTask id="Task_SaveApplication"
-                      name="Bewerbung speichern"
-                      camunda:delegateExpression="#{saveApplicationDelegate}">
+    <bpmn:serviceTask id="Task_SaveApplication" name="Bewerbung speichern" camunda:delegateExpression="#{saveApplicationDelegate}">
       <bpmn:incoming>Flow_ToSaveApplication</bpmn:incoming>
       <bpmn:outgoing>Flow_ToWelcomeMessage</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- Service Task: Generate welcome message (instead of Script Task) -->
-    <bpmn:serviceTask id="Task_WelcomeMessage"
-                      name="Willkommensnachricht erstellen"
-                      camunda:delegateExpression="#{welcomeMessageDelegate}">
+    <bpmn:serviceTask id="Task_WelcomeMessage" name="Willkommensnachricht erstellen" camunda:delegateExpression="#{welcomeMessageDelegate}">
       <bpmn:incoming>Flow_ToWelcomeMessage</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToDeadlineCheck</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- End Event -->
-    <bpmn:endEvent id="Event_ApplicationProcessed" name="Bewerbung bearbeitet">
-      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    <bpmn:serviceTask id="Task_DeadlineCheck" name="Bewerbungsfrist prüfen" camunda:delegateExpression="#{deadlineCheckDelegate}">
+      <bpmn:incoming>Flow_ToDeadlineCheck</bpmn:incoming>
+      <bpmn:incoming>Flow_ReturnFromDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDeadlineGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_DeadlineDecision" name="Frist eingehalten?">
+      <bpmn:incoming>Flow_ToDeadlineGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_OnTime</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TooLate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_HandleRejection" name="Bewerbung ablehnen" camunda:delegateExpression="#{rejectionHandlerDelegate}">
+      <bpmn:incoming>Flow_TooLate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRejectionEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_DocumentVerification" name="Dokumente prüfen" camunda:assignee="demo" camunda:candidateGroups="admins,staff">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="applicantName" label="Bewerber Name" type="string" defaultValue="${firstName} ${lastName}">
+            <camunda:properties>
+              <camunda:property id="readonly" value="true" />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="applicantEmail" label="E-Mail" type="string" defaultValue="${email}">
+            <camunda:properties>
+              <camunda:property id="readonly" value="true" />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="studyProgram" label="Studiengang" type="string" defaultValue="${studyProgramName}">
+            <camunda:properties>
+              <camunda:property id="readonly" value="true" />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="applicationId" label="Bewerbungs-ID" type="string" defaultValue="${applicationId}">
+            <camunda:properties>
+              <camunda:property id="readonly" value="true" />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="applicationDate" label="Eingangsdatum" type="string" defaultValue="${applicationDate}">
+            <camunda:properties>
+              <camunda:property id="readonly" value="true" />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="documentsComplete" label="Sind alle erforderlichen Dokumente vollständig?" type="boolean" />
+          <camunda:formField id="missingDocuments" label="Fehlende Dokumente (falls unvollständig)" type="string">
+            <camunda:properties>
+              <camunda:property id="placeholder" value="z.B. Abiturzeugnis, Lebenslauf, Motivationsschreiben..." />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="verificationNotes" label="Anmerkungen zur Dokumentenprüfung" type="string">
+            <camunda:properties>
+              <camunda:property id="placeholder" value="Zusätzliche Bemerkungen..." />
+            </camunda:properties>
+          </camunda:formField>
+          <camunda:formField id="verifiedBy" label="Geprüft von" type="string">
+            <camunda:properties>
+              <camunda:property id="placeholder" value="Name des Sachbearbeiters" />
+            </camunda:properties>
+          </camunda:formField>
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_OnTime</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToDocumentGateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_DocumentDecision" name="Dokumente vollständig?">
+      <bpmn:incoming>Flow_ToDocumentGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_DocumentsComplete</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DocumentsIncomplete</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_HandleIncompleteDocuments" name="Unvollständige Dokumente behandeln" camunda:delegateExpression="#{incompleteDocumentsDelegate}">
+      <bpmn:incoming>Flow_DocumentsIncomplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReturnFromDocuments</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CompleteDocumentVerification" name="Dokumentenprüfung abschließen" camunda:delegateExpression="#{completeDocumentVerificationDelegate}">
+      <bpmn:incoming>Flow_DocumentsComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToFinalSuccess</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_ApplicationRejected" name="Bewerbung abgelehnt">
+      <bpmn:incoming>Flow_ToRejectionEnd</bpmn:incoming>
     </bpmn:endEvent>
-
-    <!-- Sequence Flows -->
+    <bpmn:endEvent id="Event_ApplicationSuccessful" name="Bewerbung erfolgreich">
+      <bpmn:incoming>Flow_ToFinalSuccess</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_ToSaveApplication" sourceRef="StartEvent_ApplicationReceived" targetRef="Task_SaveApplication" />
     <bpmn:sequenceFlow id="Flow_ToWelcomeMessage" sourceRef="Task_SaveApplication" targetRef="Task_WelcomeMessage" />
-    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_WelcomeMessage" targetRef="Event_ApplicationProcessed" />
-
+    <bpmn:sequenceFlow id="Flow_ToDeadlineCheck" sourceRef="Task_WelcomeMessage" targetRef="Task_DeadlineCheck" />
+    <bpmn:sequenceFlow id="Flow_ToDeadlineGateway" sourceRef="Task_DeadlineCheck" targetRef="Gateway_DeadlineDecision" />
+    <bpmn:sequenceFlow id="Flow_OnTime" name="Rechtzeitig eingereicht" sourceRef="Gateway_DeadlineDecision" targetRef="Task_DocumentVerification">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{isApplicationOnTime == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_TooLate" name="Frist überschritten" sourceRef="Gateway_DeadlineDecision" targetRef="Task_HandleRejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{isApplicationOnTime == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToDocumentGateway" sourceRef="Task_DocumentVerification" targetRef="Gateway_DocumentDecision" />
+    <bpmn:sequenceFlow id="Flow_DocumentsComplete" name="Dokumente vollständig" sourceRef="Gateway_DocumentDecision" targetRef="Task_CompleteDocumentVerification">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{documentsComplete == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_DocumentsIncomplete" name="Dokumente unvollständig" sourceRef="Gateway_DocumentDecision" targetRef="Task_HandleIncompleteDocuments">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{documentsComplete == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ReturnFromDocuments" sourceRef="Task_HandleIncompleteDocuments" targetRef="Task_DeadlineCheck" />
+    <bpmn:sequenceFlow id="Flow_ToRejectionEnd" sourceRef="Task_HandleRejection" targetRef="Event_ApplicationRejected" />
+    <bpmn:sequenceFlow id="Flow_ToFinalSuccess" sourceRef="Task_CompleteDocumentVerification" targetRef="Event_ApplicationSuccessful" />
   </bpmn:process>
-
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="student-application-process">
-
       <bpmndi:BPMNShape id="StartEvent_ApplicationReceived_di" bpmnElement="StartEvent_ApplicationReceived">
-        <dc:Bounds x="172" y="82" width="36" height="36" />
+        <dc:Bounds x="152" y="142" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="125" width="64" height="27" />
+          <dc:Bounds x="138" y="185" width="64" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
       <bpmndi:BPMNShape id="Task_SaveApplication_di" bpmnElement="Task_SaveApplication">
-        <dc:Bounds x="280" y="60" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="240" y="120" width="100" height="80" />
       </bpmndi:BPMNShape>
-
       <bpmndi:BPMNShape id="Task_WelcomeMessage_di" bpmnElement="Task_WelcomeMessage">
-        <dc:Bounds x="450" y="60" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+        <dc:Bounds x="390" y="120" width="100" height="80" />
       </bpmndi:BPMNShape>
-
-      <bpmndi:BPMNShape id="Event_ApplicationProcessed_di" bpmnElement="Event_ApplicationProcessed">
-        <dc:Bounds x="622" y="82" width="36" height="36" />
+      <bpmndi:BPMNShape id="Task_DeadlineCheck_di" bpmnElement="Task_DeadlineCheck">
+        <dc:Bounds x="540" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DeadlineDecision_di" bpmnElement="Gateway_DeadlineDecision" isMarkerVisible="true">
+        <dc:Bounds x="695" y="135" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="608" y="125" width="64" height="27" />
+          <dc:Bounds x="683" y="105" width="75" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
+      <bpmndi:BPMNShape id="Task_HandleRejection_di" bpmnElement="Task_HandleRejection">
+        <dc:Bounds x="820" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DocumentVerification_di" bpmnElement="Task_DocumentVerification">
+        <dc:Bounds x="820" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DocumentDecision_di" bpmnElement="Gateway_DocumentDecision" isMarkerVisible="true">
+        <dc:Bounds x="995" y="75" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="983" y="45" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_HandleIncompleteDocuments_di" bpmnElement="Task_HandleIncompleteDocuments">
+        <dc:Bounds x="970" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CompleteDocumentVerification_di" bpmnElement="Task_CompleteDocumentVerification">
+        <dc:Bounds x="1120" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ApplicationRejected_di" bpmnElement="Event_ApplicationRejected">
+        <dc:Bounds x="1002" y="342" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="988" y="385" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ApplicationSuccessful_di" bpmnElement="Event_ApplicationSuccessful">
+        <dc:Bounds x="1302" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1288" y="125" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_ToSaveApplication_di" bpmnElement="Flow_ToSaveApplication">
-        <di:waypoint x="208" y="100" />
-        <di:waypoint x="280" y="100" />
+        <di:waypoint x="188" y="160" />
+        <di:waypoint x="240" y="160" />
       </bpmndi:BPMNEdge>
-
       <bpmndi:BPMNEdge id="Flow_ToWelcomeMessage_di" bpmnElement="Flow_ToWelcomeMessage">
-        <di:waypoint x="380" y="100" />
-        <di:waypoint x="450" y="100" />
+        <di:waypoint x="340" y="160" />
+        <di:waypoint x="390" y="160" />
       </bpmndi:BPMNEdge>
-
-      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
-        <di:waypoint x="550" y="100" />
-        <di:waypoint x="622" y="100" />
+      <bpmndi:BPMNEdge id="Flow_ToDeadlineCheck_di" bpmnElement="Flow_ToDeadlineCheck">
+        <di:waypoint x="490" y="160" />
+        <di:waypoint x="540" y="160" />
       </bpmndi:BPMNEdge>
-
+      <bpmndi:BPMNEdge id="Flow_ToDeadlineGateway_di" bpmnElement="Flow_ToDeadlineGateway">
+        <di:waypoint x="640" y="160" />
+        <di:waypoint x="695" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_OnTime_di" bpmnElement="Flow_OnTime">
+        <di:waypoint x="720" y="135" />
+        <di:waypoint x="720" y="100" />
+        <di:waypoint x="820" y="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="82" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TooLate_di" bpmnElement="Flow_TooLate">
+        <di:waypoint x="720" y="185" />
+        <di:waypoint x="720" y="360" />
+        <di:waypoint x="820" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="740" y="342" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToDocumentGateway_di" bpmnElement="Flow_ToDocumentGateway">
+        <di:waypoint x="920" y="100" />
+        <di:waypoint x="995" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocumentsComplete_di" bpmnElement="Flow_DocumentsComplete">
+        <di:waypoint x="1045" y="100" />
+        <di:waypoint x="1120" y="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1060" y="82" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DocumentsIncomplete_di" bpmnElement="Flow_DocumentsIncomplete">
+        <di:waypoint x="1020" y="125" />
+        <di:waypoint x="1020" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1040" y="152" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReturnFromDocuments_di" bpmnElement="Flow_ReturnFromDocuments">
+        <di:waypoint x="970" y="240" />
+        <di:waypoint x="570" y="240" />
+        <di:waypoint x="570" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="680" y="222" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectionEnd_di" bpmnElement="Flow_ToRejectionEnd">
+        <di:waypoint x="920" y="360" />
+        <di:waypoint x="1002" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToFinalSuccess_di" bpmnElement="Flow_ToFinalSuccess">
+        <di:waypoint x="1220" y="100" />
+        <di:waypoint x="1302" y="100" />
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

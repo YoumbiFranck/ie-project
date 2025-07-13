@@ -66,6 +66,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - .:/workspace
     environment:
       # Spring-Profil für Produktion / Spring profile for production
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}

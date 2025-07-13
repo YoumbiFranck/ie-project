@@ -2,6 +2,13 @@
 docker compose down -v
 docker compose up -d
 
+# Anwendung starten / Start application (neue Mathode)
+docker exec -it ie_project_app mvn compile
+docker compose restart app
+# ou
+docker exec -it ie_project_app mvn spring-boot:run
+
+
 docker compose up --build -d
 # Start the application (wenn Änderungen an der Anwendung vorgenommen wurden) / Start the application (if changes were made to the application)
 docker compose build app --no-cache
@@ -107,3 +114,19 @@ docker compose logs app | grep -i mysql
 docker compose logs app | grep -i "deploying\|bpmn"
 
 docker compose logs app --tail=100
+
+
+
+---
+
+# 1. Arrêt complet avec suppression des volumes
+docker compose down -v --remove-orphans
+
+# 2. Suppression de l'image de l'application
+docker rmi ie-project-app
+
+# 3. Reconstruction complète
+docker compose up -d --build
+
+# 4. Vérification des logs
+docker logs ie_project_app -f

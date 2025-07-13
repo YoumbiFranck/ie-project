@@ -52,6 +52,17 @@ logging:
     org.springframework: INFO
     root: INFO
 
+# Application Deadline Configuration / Bewerbungsfristen-Konfiguration
+application:
+  deadline:
+    # Winter semester deadline (01.08.2025) / Wintersemester-Deadline (01.08.2025)
+    winter: "2025-08-01"
+    # Summer semester deadline (01.02.2025) / Sommersemester-Deadline (01.02.2025)
+    summer: "2025-02-01"
+    # Months before deadline for application submission / Monate vor Deadline für Bewerbungseinreichung
+    months:
+      before: 2
+
 ---
 # Docker-Profil für Produktionsumgebung / Docker profile for production environment
 spring:
@@ -87,6 +98,14 @@ camunda:
         skipIsolationLevelCheck: true
         databaseTablePrefix: ""
         historyTimeToLive: "30"
+
+# Application Deadline Configuration for Docker / Bewerbungsfristen-Konfiguration für Docker
+application:
+  deadline:
+    winter: ${APPLICATION_DEADLINE_WINTER:2025-08-01}
+    summer: ${APPLICATION_DEADLINE_SUMMER:2025-02-01}
+    months:
+      before: ${APPLICATION_DEADLINE_MONTHS_BEFORE:2}
 
 # Actuator endpoints pour Docker
 management:
