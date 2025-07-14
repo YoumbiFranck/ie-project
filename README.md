@@ -13,9 +13,6 @@ Ein vollständiges digitales Bewerbungs- und Immatrikulationssystem für Univers
 7. [API-Endpunkte](#api-endpunkte)
 8. [BPMN-Workflow](#bpmn-workflow)
 9. [Datenbankschema](#datenbankschema)
-10. [Projektstruktur](#projektstruktur)
-11. [Bekannte Probleme und Lösungen](#bekannte-probleme-und-lösungen)
-12. [Mitwirkende](#mitwirkende)
 
 ##  Projektübersicht
 
