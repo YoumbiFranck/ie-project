@@ -3,7 +3,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: camunda_mysql
-    platform: linux/amd64  # Für Mac M1/M2 Kompatibilität / For Mac M1/M2 compatibility
+    platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-camunda}
@@ -19,7 +19,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      # Mount initialization script / Script d'initialisation
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - camunda_network
@@ -62,7 +61,7 @@ services:
       start_period: 60s
       interval: 30s
 
-  # Votre application Java / Your Java Application
+
   app:
     build:
       context: .
@@ -92,7 +91,6 @@ services:
       APPLICATION_DEADLINE_WINTER: ${APPLICATION_DEADLINE_WINTER:-2025-08-01}
       APPLICATION_DEADLINE_SUMMER: ${APPLICATION_DEADLINE_SUMMER:-2025-02-01}
       APPLICATION_DEADLINE_MONTHS_BEFORE: ${APPLICATION_DEADLINE_MONTHS_BEFORE:-2}
-      # JVM Options pour éviter les problèmes de mémoire
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
     ports:
       - "8080:8080"
@@ -106,7 +104,7 @@ services:
       start_period: 60s
       interval: 30s
 
-  # phpMyAdmin für Datenbankadministration (optional) / phpMyAdmin for database administration (optional)
+    # PHPMyAdmin Service für MySQL / PHPMyAdmin service for MySQL
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: camunda_phpmyadmin

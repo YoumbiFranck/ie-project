@@ -18,7 +18,7 @@ public class Application {
 
     System.out.println("Application Started 3");
 
-    // Debug: Liste aller Delegate Beans / Debug: List all Delegate beans
+    // Debug: List all Delegate beans
     System.out.println("=== REGISTERED DELEGATE BEANS ===");
     String[] beanNames = context.getBeanNamesForType(JavaDelegate.class);
     for (String beanName : beanNames) {
