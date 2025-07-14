@@ -13,9 +13,13 @@ POST {{baseUrl}}/api/payment/update-status
 Content-Type: application/json
 
 {
-  "applicationId": 1,
+  "applicationId": 19,
   "paid": true
 }
+
+
+
+
 
 ### ==============================================
 ###  MARK AS UNPAID

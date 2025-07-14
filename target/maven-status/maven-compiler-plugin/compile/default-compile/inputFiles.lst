@@ -32,6 +32,7 @@
 /workspace/src/main/java/com/ie_project/workflow/controller/UserTaskController.java
 /workspace/src/main/java/com/ie_project/workflow/repository/StudentRepository.java
 /workspace/src/main/java/com/ie_project/workflow/delegate/WelcomePackageDelegate.java
+/workspace/src/main/java/com/ie_project/workflow/controller/PaymentSimulationController.java
 /workspace/src/main/java/com/ie_project/workflow/delegate/PaymentCheckDelegate.java
 /workspace/src/main/java/com/ie_project/workflow/service/ApplicationService.java
 /workspace/src/main/java/com/ie_project/workflow/delegate/NCRankingDelegate.java

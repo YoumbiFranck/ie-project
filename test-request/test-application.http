@@ -1,0 +1,18 @@
+### Neue Bewerbung einreichen
+POST http://localhost:8080/api/applications
+Content-Type: application/json
+
+{
+  "firstName": "Max",
+  "lastName": "Mustermann",
+  "sex": "M",
+  "email": "max.mustermann@example.com",
+  "dateOfBirth": "1995-05-15",
+  "street": "Musterstraße 123",
+  "city": "Musterstadt",
+  "postalCode": "12345",
+  "country": "Deutschland",
+  "phone": "+49 123 456789",
+  "studyProgramId": 3,
+  "highSchoolGrade": 2.1
+}
