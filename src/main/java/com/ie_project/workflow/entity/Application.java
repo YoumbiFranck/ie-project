@@ -27,6 +27,11 @@ public class Application {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // AJOUTÉ : Sex enum et propriété
+    @Column(name = "sex", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Sex sex;
+
     @Column(length = 50)
     private String phone;
 
@@ -54,6 +59,10 @@ public class Application {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
+
+    // AJOUTÉ : Payment Status / Zahlungsstatus
+    @Column(name = "tuition_fee_paid", nullable = false)
+    private boolean tuitionFeePaid = false;
 
     // Process Information / Prozessinformationen
     @Column(name = "camunda_process_instance_id")
@@ -93,6 +102,10 @@ public class Application {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
+    // AJOUTÉ : Sex getter/setter
+    public Sex getSex() { return sex; }
+    public void setSex(Sex sex) { this.sex = sex; }
+
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
@@ -120,6 +133,10 @@ public class Application {
     public ApplicationStatus getStatus() { return status; }
     public void setStatus(ApplicationStatus status) { this.status = status; }
 
+    // AJOUTÉ : Payment getter/setter
+    public boolean isTuitionFeePaid() { return tuitionFeePaid; }
+    public void setTuitionFeePaid(boolean tuitionFeePaid) { this.tuitionFeePaid = tuitionFeePaid; }
+
     public String getCamundaProcessInstanceId() { return camundaProcessInstanceId; }
     public void setCamundaProcessInstanceId(String camundaProcessInstanceId) {
         this.camundaProcessInstanceId = camundaProcessInstanceId;
@@ -131,6 +148,52 @@ public class Application {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    // AJOUTÉ : Business methods
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
+    public boolean isPending() {
+        return status == ApplicationStatus.SUBMITTED || status == ApplicationStatus.DOCUMENT_CHECK;
+    }
+
+    public boolean isDecided() {
+        return status == ApplicationStatus.ACCEPTED || status == ApplicationStatus.REJECTED || status == ApplicationStatus.ENROLLED;
+    }
+
+    public boolean isEnrolled() {
+        return status == ApplicationStatus.ENROLLED;
+    }
+
+    public boolean isRejected() {
+        return status == ApplicationStatus.REJECTED;
+    }
+
+    /**
+     * AJOUTÉ : Sex enum für Geschlecht / Sex enum for gender
+     */
+    public enum Sex {
+        M("Male", "Männlich"),
+        F("Female", "Weiblich"),
+        D("Diverse", "Divers");
+
+        private final String englishLabel;
+        private final String germanLabel;
+
+        Sex(String englishLabel, String germanLabel) {
+            this.englishLabel = englishLabel;
+            this.germanLabel = germanLabel;
+        }
+
+        public String getEnglishLabel() {
+            return englishLabel;
+        }
+
+        public String getGermanLabel() {
+            return germanLabel;
+        }
+    }
+
     /**
      * Status enum für Bewerbungen / Status enum for applications
      */
@@ -140,5 +203,21 @@ public class Application {
         ACCEPTED,          // Angenommen
         REJECTED,          // Abgelehnt
         ENROLLED           // Eingeschrieben
+    }
+
+    @Override
+    public String toString() {
+        return "Application{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", sex=" + sex +
+                ", studyProgram=" + (studyProgram != null ? studyProgram.getName() : null) +
+                ", highSchoolGrade=" + highSchoolGrade +
+                ", status=" + status +
+                ", tuitionFeePaid=" + tuitionFeePaid +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

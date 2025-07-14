@@ -1,0 +1,53 @@
+### ==============================================
+### Payment Simulation REST API
+### ==============================================
+
+@baseUrl = http://localhost:8080
+@applicationId = 1
+
+### ==============================================
+###  MARK AS PAID
+### ==============================================
+
+POST {{baseUrl}}/api/payment/update-status
+Content-Type: application/json
+
+{
+  "applicationId": 1,
+  "paid": true
+}
+
+### ==============================================
+###  MARK AS UNPAID
+### ==============================================
+
+POST {{baseUrl}}/api/payment/update-status
+Content-Type: application/json
+
+{
+  "applicationId": 1,
+  "paid": false
+}
+
+
+### ==============================================
+###  BULK SIMULATION
+### ==============================================
+
+### Set all accepted students as paid
+POST {{baseUrl}}/api/payment/simulate-bulk-payment
+Content-Type: application/json
+
+{
+  "paid": true
+}
+
+###
+
+### Set all accepted students as unpaid
+POST {{baseUrl}}/api/payment/simulate-bulk-payment
+Content-Type: application/json
+
+{
+  "paid": false
+}

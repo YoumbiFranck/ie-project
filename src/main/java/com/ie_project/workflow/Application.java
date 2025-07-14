@@ -16,7 +16,7 @@ public class Application {
 
     ApplicationContext context = SpringApplication.run(Application.class, args);
 
-    System.out.println("Application Started 2");
+    System.out.println("Application Started 3");
 
     // Debug: Liste aller Delegate Beans / Debug: List all Delegate beans
     System.out.println("=== REGISTERED DELEGATE BEANS ===");

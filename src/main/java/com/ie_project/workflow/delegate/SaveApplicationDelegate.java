@@ -53,6 +53,15 @@ public class SaveApplicationDelegate implements JavaDelegate {
             execution.setVariable("applicationSaved", true);
             execution.setVariable("currentStatus", application.getStatus().toString());
 
+            // Set variables for form compatibility / Variablen für Formular-Kompatibilität setzen
+            execution.setVariable("firstName", application.getFirstName());
+            execution.setVariable("lastName", application.getLastName());
+            execution.setVariable("email", application.getEmail());
+            execution.setVariable("sex", application.getSex().toString());
+            execution.setVariable("studyProgramName", application.getStudyProgram().getName());
+            execution.setVariable("studyProgramCode", application.getStudyProgram().getCode());
+            execution.setVariable("admissionType", application.getStudyProgram().getAdmissionType().toString());
+
             System.out.println("=== SAVE APPLICATION COMPLETED SUCCESSFULLY ===");
 
         } catch (Exception e) {

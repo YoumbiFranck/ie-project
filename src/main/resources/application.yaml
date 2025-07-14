@@ -15,6 +15,13 @@ spring:
       enabled: true
       path: /h2-console
 
+  # AJOUT: Configuration des ressources statiques pour éviter les conflits
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
+      cache:
+        period: 3600
+
 # Camunda-Konfiguration / Camunda configuration
 camunda:
   bpm:
@@ -28,19 +35,27 @@ camunda:
       schema-update: true
     webapp:
       application-path: /camunda
+      # AJOUT: Configuration explicite de l'interface web
+      index-redirect-enabled: true
     rest:
       enabled: true
+    # AJOUT: Désactiver l'auto-déploiement si problématique
+    auto-deployment-enabled: true
 
 # Server-Konfiguration / Server configuration
 server:
   port: 8080
+  # AJOUT: Configuration des ressources statiques
+  error:
+    include-stacktrace: on_param
+    include-exception: true
 
 # Spring Boot Actuator für health checks
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,beans
   endpoint:
     health:
       show-details: when-authorized
@@ -48,8 +63,9 @@ management:
 # Logging-Konfiguration / Logging configuration
 logging:
   level:
-    org.camunda: INFO
-    org.springframework: INFO
+    org.camunda: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.resource: DEBUG
     root: INFO
 
 # Application Deadline Configuration / Bewerbungsfristen-Konfiguration
@@ -76,6 +92,8 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:camunda}
     password: ${SPRING_DATASOURCE_PASSWORD:camunda}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    hikari:
+      connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
 
   # JPA-Konfiguration für MySQL / JPA configuration for MySQL
   jpa:
@@ -85,6 +103,19 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        connection:
+          characterEncoding: utf8mb4
+          useUnicode: true
+          format_sql: true
+    # AJOUT: Configuration de base de données pour UTF8MB4
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+  # AJOUT: Configuration des ressources statiques pour Docker
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
+      cache:
+        period: 7200
 
 # Camunda-Konfiguration für Docker / Camunda configuration for Docker
 camunda:
@@ -92,12 +123,16 @@ camunda:
     database:
       type: ${CAMUNDA_BPM_DATABASE_TYPE:mysql}
       schema-update: ${CAMUNDA_BPM_DATABASE_SCHEMA_UPDATE:true}
+    webapp:
+      application-path: /camunda
+      index-redirect-enabled: true
     # MySQL spezifische Konfiguration / MySQL specific configuration
     generic-properties:
       properties:
         skipIsolationLevelCheck: true
         databaseTablePrefix: ""
         historyTimeToLive: "30"
+        jdbcUrl: "jdbc:mysql://mysql:3306/camunda?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC"
 
 # Application Deadline Configuration for Docker / Bewerbungsfristen-Konfiguration für Docker
 application:
@@ -112,7 +147,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,beans
   endpoint:
     health:
       show-details: always
+
+# AJOUT: Configuration de logging pour débugger les ressources
+logging:
+  level:
+    org.camunda: INFO
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.resource: DEBUG
+    root: INFO

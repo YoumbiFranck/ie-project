@@ -3,6 +3,7 @@
 -- File: database/init.sql
 -- This script will be executed automatically when MySQL container starts
 -- =====================================================
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Use the camunda database
 USE camunda;
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS study_programs (
     admission_type ENUM('OPEN', 'NUMERUS_CLAUSUS', 'ENTRANCE_EXAM') NOT NULL,
     max_students INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;;
 
 -- =====================================================
 -- 2. APPLICATIONS (Bewerbungen)
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS applications (
                                             first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    sex ENUM('M', 'F', 'D') NOT NULL DEFAULT 'M',
     phone VARCHAR(50),
     date_of_birth DATE NOT NULL,
 
@@ -45,6 +47,9 @@ CREATE TABLE IF NOT EXISTS applications (
     -- Application Status
     status ENUM('SUBMITTED', 'DOCUMENT_CHECK', 'ACCEPTED', 'REJECTED', 'ENROLLED') DEFAULT 'SUBMITTED',
 
+    -- Payment Status
+    tuition_fee_paid BOOLEAN DEFAULT FALSE,
+
     -- Process Information
     camunda_process_instance_id VARCHAR(255),
 
@@ -54,7 +59,7 @@ CREATE TABLE IF NOT EXISTS applications (
 
     -- Foreign Keys
     FOREIGN KEY (study_program_id) REFERENCES study_programs(id)
-    );
+    )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- 3. STUDENTS (Enrolled Students)
@@ -73,19 +78,18 @@ CREATE TABLE IF NOT EXISTS students (
     enrollment_date DATE NOT NULL,
     current_semester INT DEFAULT 1,
 
-    -- Payment Status
-    tuition_fee_paid BOOLEAN DEFAULT FALSE,
 
     -- Link to original application
     application_id BIGINT UNIQUE,
 
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     -- Foreign Keys
     FOREIGN KEY (study_program_id) REFERENCES study_programs(id),
     FOREIGN KEY (application_id) REFERENCES applications(id)
-    );
+    )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- FUNCTION for Student Number Generation
@@ -151,10 +155,10 @@ DELIMITER ;
 
 -- Insert study programs (only if table is empty)
 INSERT IGNORE INTO study_programs (name, code, admission_type, max_students) VALUES
-('Informatik', 'INF', 'NUMERUS_CLAUSUS', 100),
-('Betriebswirtschaftslehre', 'BWL', 'NUMERUS_CLAUSUS', 150),
+('Informatik', 'INF', 'NUMERUS_CLAUSUS', 3),
+('Betriebswirtschaftslehre', 'BWL', 'NUMERUS_CLAUSUS', 3),
 ('Maschinenbau', 'MB', 'OPEN', NULL),
-('Medizin', 'MED', 'ENTRANCE_EXAM', 50),
+('Medizin', 'MED', 'ENTRANCE_EXAM', NULL),
 ('Philosophie', 'PHIL', 'OPEN', NULL);
 
 -- =====================================================

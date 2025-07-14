@@ -63,6 +63,10 @@ public class ApplicationService {
         application.setStudyProgram(studyProgram);
         application.setHighSchoolGrade(requestDTO.getHighSchoolGrade());
 
+        application.setSex(requestDTO.getSex());
+
+
+
         // Save application / Bewerbung speichern
         Application savedApplication = applicationRepository.save(application);
 

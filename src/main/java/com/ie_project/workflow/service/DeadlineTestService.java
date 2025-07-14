@@ -65,14 +65,14 @@ public class DeadlineTestService {
             // Create message / Nachricht erstellen
             String message = deadlineService.createDeadlineMessage(result, "Test Student");
 
-            System.out.println("Result: " + (isOnTime ? "✅ ON TIME" : "❌ TOO LATE"));
+            System.out.println("Result: " + (isOnTime ? "ON TIME" : "TOO LATE"));
             System.out.println("Target Semester: " + result.getSemesterType());
             System.out.println("Submission Deadline: " + result.getSubmissionDeadline().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
             System.out.println("Days until/past deadline: " + result.getDaysUntilDeadline());
             System.out.println("Message: " + message.substring(0, Math.min(100, message.length())) + "...");
 
         } catch (Exception e) {
-            System.err.println("❌ ERROR in scenario: " + e.getMessage());
+            System.err.println("ERROR in scenario: " + e.getMessage());
         }
 
         System.out.println("--------------------");

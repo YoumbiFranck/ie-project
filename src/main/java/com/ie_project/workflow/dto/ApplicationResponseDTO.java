@@ -15,6 +15,7 @@ public class ApplicationResponseDTO {
     private String processInstanceId;
     private String status;
     private LocalDateTime submissionTime;
+    private String sex;
 
     // Constructors
     public ApplicationResponseDTO() {}
@@ -42,4 +43,7 @@ public class ApplicationResponseDTO {
 
     public LocalDateTime getSubmissionTime() { return submissionTime; }
     public void setSubmissionTime(LocalDateTime submissionTime) { this.submissionTime = submissionTime; }
+
+    public String getSex() { return sex; }
+    public void setSex(String sex) { this.sex = sex; }
 }
